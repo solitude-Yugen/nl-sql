@@ -4,766 +4,495 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NL to SQL Converter</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
             height: 100vh;
             display: flex;
             flex-direction: column;
         }
-        
         .header {
             background-color: #4CAF50;
             color: white;
             padding: 15px;
             text-align: center;
         }
-        
         .navbar {
-            background-color: #FFD580;
+            background-color: #FFCC80;
             padding: 10px;
             display: flex;
             align-items: center;
         }
-        
-        .folder-icon {
-            margin-right: 15px;
-            color: #1976D2;
-            font-size: 1.5em;
-        }
-        
-        .search-bar {
+        .search-container {
             flex-grow: 1;
-            padding: 8px;
-            border-radius: 15px;
-            border: 1px solid #ccc;
-            outline: none;
+            margin-left: 20px;
         }
-        
         .main-container {
             display: flex;
             flex-grow: 1;
         }
-        
-        .project-directory {
-            background-color: #607D8B;
+        .sidebar {
+            background-color: #5C6BC0;
             color: white;
-            width: 20%;
+            width: 200px;
             padding: 15px;
+        }
+        .content {
+            flex-grow: 1;
             display: flex;
             flex-direction: column;
         }
-        
-        .directory-header {
-            background-color: #4CAF50;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-        
-        .workspace {
-            display: flex;
-            flex-direction: column;
-            width: 80%;
-        }
-        
-        .top-workspace {
+        .top-content {
             display: flex;
             height: 60%;
         }
-        
         .sql-editor {
-            background-color: #607D8B;
+            background-color: #5C6BC0;
+            flex-grow: 1;
             padding: 15px;
-            flex-grow: 1;
             display: flex;
             flex-direction: column;
         }
-        
-        .editor-header {
-            background-color: #4CAF50;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-        
-        .editor-content {
-            flex-grow: 1;
-            background-color: #f5f5f5;
-            border-radius: 5px;
-            padding: 10px;
-            font-family: monospace;
-            white-space: pre-wrap;
-            overflow-y: auto;
-        }
-        
-        .results-container {
-            display: flex;
-            flex-direction: column;
+        .result-container {
+            background-color: #5C6BC0;
             width: 40%;
-            background-color: #607D8B;
-        }
-        
-        .result-table {
-            background-color: #607D8B;
             padding: 15px;
-            height: 60%;
+            margin-left: 10px;
             display: flex;
             flex-direction: column;
         }
-        
         .error-log {
-            background-color: #607D8B;
+            background-color: #5C6BC0;
+            height: 20%;
+            margin-top: 10px;
             padding: 15px;
-            height: 40%;
-            display: flex;
-            flex-direction: column;
         }
-        
-        .log-header {
-            background-color: #4CAF50;
+        .natural-lang-input {
+            background-color: #5C6BC0;
+            padding: 15px;
+            margin-top: 10px;
+            height: 20%;
+        }
+        .editor-area, .result-area, .error-area, .nl-input-area {
+            background-color: #ffffff;
             padding: 10px;
             border-radius: 5px;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-        
-        .log-content {
             flex-grow: 1;
-            background-color: #f5f5f5;
-            border-radius: 5px;
-            padding: 10px;
+            overflow: auto;
+        }
+        .nl-input-area {
+            resize: none;
+            border: none;
+            width: 100%;
+            height: 100%;
+        }
+        .editor-area {
+            resize: none;
+            border: none;
+            width: 100%;
+            height: 100%;
             font-family: monospace;
-            overflow-y: auto;
-            color: red;
         }
-        
-        .table-content {
-            flex-grow: 1;
-            background-color: #f5f5f5;
-            border-radius: 5px;
-            padding: 10px;
-            overflow-y: auto;
-        }
-        
-        table {
+        .result-table {
             width: 100%;
             border-collapse: collapse;
         }
-        
-        th, td {
+        .result-table th, .result-table td {
             border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
         }
-        
-        th {
+        .result-table th {
             background-color: #f2f2f2;
         }
-        
-        .natural-lang-input {
-            background-color: #607D8B;
-            padding: 15px;
-            height: 40%;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .input-header {
-            background-color: #4CAF50;
-            padding: 10px;
-            border-radius: 5px;
+        .project-item {
             margin-bottom: 10px;
-            text-align: center;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 3px;
+            background-color: rgba(255, 255, 255, 0.1);
         }
-        
-        textarea {
-            flex-grow: 1;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            resize: none;
-            font-family: Arial, sans-serif;
-            margin-bottom: 10px;
-        }
-        
-        button {
+        .btn-custom {
             background-color: #4CAF50;
             color: white;
-            padding: 10px 15px;
             border: none;
-            border-radius: 5px;
+            padding: 5px 10px;
+            border-radius: 3px;
             cursor: pointer;
+            margin-top: 10px;
+        }
+        .database-info {
+            margin-bottom: 15px;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .section-title {
+            color: white;
+            margin-bottom: 10px;
             font-weight: bold;
         }
-        
-        button:hover {
-            background-color: #45a049;
+        .component-title {
+            background-color: #4CAF50;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+            display: inline-block;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h2>NATURAL LANGUAGE TO SQL CONVERTER</h2>
+        <h2>NL to SQL Converter</h2>
     </div>
     
     <div class="navbar">
-        <div class="folder-icon">📁</div>
-        <input type="text" class="search-bar" placeholder="Search...">
+        <div style="margin-left: 10px;">
+            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0zIDlsMTgtOSA2IDIwLTEyIDQtMTIgNHptMTgtOVYzbTAgMHYxOG0wLTE4TDMgOWwxMiA0bDYgMiIvPjwvc3ZnPg==" width="24" height="24" alt="Folder">
+        </div>
+        <div class="search-container">
+            <input type="text" class="form-control" placeholder="Search...">
+        </div>
     </div>
     
     <div class="main-container">
-        <div class="project-directory">
-            <div class="directory-header">PROJECT DIRECTORY</div>
-            <div>
-                <div id="schema-view">
-                    <h3>Database Schema</h3>
-                    <div id="schema-content">
-                        <p><strong>customers</strong>: customer_id, name, email, city, state</p>
-                        <p><strong>products</strong>: product_id, name, price, category</p>
-                        <p><strong>orders</strong>: order_id, customer_id, order_date, total</p>
-                        <p><strong>order_items</strong>: item_id, order_id, product_id, quantity, price</p>
-                    </div>
-                </div>
-                <button onclick="editSchema()">Edit Schema</button>
+        <div class="sidebar">
+            <div class="component-title">PROJECT DIRECTORY</div>
+            <div class="database-info">
+                <strong>Current Database:</strong>
+                <select id="database-selector" class="form-select form-select-sm mt-2">
+                    <option value="sample_db">sample_db</option>
+                    <option value="test_db">test_db</option>
+                </select>
             </div>
+            <div class="project-item">users</div>
+            <div class="project-item">products</div>
+            <div class="project-item">orders</div>
+            <div class="project-item">categories</div>
         </div>
         
-        <div class="workspace">
-            <div class="top-workspace">
+        <div class="content">
+            <div class="top-content">
                 <div class="sql-editor">
-                    <div class="editor-header">SQL EDITOR</div>
-                    <div class="editor-content" id="sql-output" contenteditable="true"></div>
-                    <div style="margin-top: 10px; display: flex; justify-content: space-between;">
-                        <button onclick="copyToClipboard()">Copy SQL</button>
-                        <button onclick="executeSQL()">Execute SQL</button>
-                    </div>
+                    <div class="component-title">SQL EDITOR</div>
+                    <textarea id="sql-editor" class="editor-area" placeholder="SQL query will appear here..."></textarea>
+                    <button id="execute-btn" class="btn-custom">Execute</button>
                 </div>
                 
-                <div class="results-container">
-                    <div class="result-table">
-                        <div class="editor-header">RESULT/TABLE</div>
-                        <div class="table-content" id="result-content">
-                            <em>No results to display</em>
-                        </div>
+                <div class="result-container">
+                    <div class="component-title">RESULT/TABLE</div>
+                    <div id="result-area" class="result-area">
+                        <!-- Results will be displayed here -->
                     </div>
-                    
-                    <div class="error-log">
-                        <div class="log-header">ERROR LOG</div>
-                        <div class="log-content" id="error-content"></div>
-                    </div>
+                </div>
+            </div>
+            
+            <div class="error-log">
+                <div class="component-title">ERROR LOG</div>
+                <div id="error-log" class="error-area">
+                    <!-- Error messages will be displayed here -->
                 </div>
             </div>
             
             <div class="natural-lang-input">
-                <div class="input-header">NATURAL LANG INPUT</div>
-                <textarea id="nl-input" placeholder="Enter your query in natural language (e.g., 'Show me all customers from New York')"></textarea>
-                <button onclick="convertToSQL()">Convert to SQL</button>
+                <div class="component-title">NATURAL LANG INPUT</div>
+                <textarea id="nl-input" class="nl-input-area" placeholder="Enter your natural language query here..."></textarea>
+                <button id="convert-btn" class="btn-custom">Convert to SQL</button>
+                <div id="loading" style="display: none; margin-left: 10px;">
+                    <div class="loading"></div> Processing...
+                </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/sql.js@1.8.0/dist/sql-wasm.js"></script>
     <script>
-        // Global variables
-        let db;
-        let SQL;
-        let schema = `
-CREATE TABLE customers (
-    customer_id INT PRIMARY KEY,
-    name VARCHAR(100),
-    email VARCHAR(100),
-    city VARCHAR(50),
-    state VARCHAR(2)
+        // Sample schema information for the model context
+        const sampleSchema = `
+CREATE TABLE users (
+    user_id INT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE
 );
 
 CREATE TABLE products (
     product_id INT PRIMARY KEY,
-    name VARCHAR(100),
-    price DECIMAL(10, 2),
-    category VARCHAR(50)
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    price DECIMAL(10, 2) NOT NULL,
+    stock_quantity INT NOT NULL,
+    category_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE orders (
     order_id INT PRIMARY KEY,
-    customer_id INT,
-    order_date DATE,
-    total DECIMAL(10, 2),
-    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+    user_id INT NOT NULL,
+    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    total_amount DECIMAL(10, 2) NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    shipping_address TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
-CREATE TABLE order_items (
-    item_id INT PRIMARY KEY,
-    order_id INT,
-    product_id INT,
-    quantity INT,
-    price DECIMAL(10, 2),
-    FOREIGN KEY (order_id) REFERENCES orders(order_id),
-    FOREIGN KEY (product_id) REFERENCES products(product_id)
-);`;
+CREATE TABLE categories (
+    category_id INT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    description TEXT
+);
+`;
 
-        // Initialize SQL.js
-        initSqlJs({
-            locateFile: file => `https://cdn.jsdelivr.net/npm/sql.js@1.8.0/dist/sql-wasm.wasm`
-        }).then(function(sql) {
-            SQL = sql;
-            db = new SQL.Database();
-            console.log("SQL.js initialized");
+        // Sample data for execution simulation
+        const sampleData = {
+            users: [
+                { user_id: 1, username: "john_doe", email: "john@example.com", is_active: true },
+                { user_id: 2, username: "jane_smith", email: "jane@example.com", is_active: true },
+                { user_id: 3, username: "bob_jones", email: "bob@example.com", is_active: false }
+            ],
+            products: [
+                { product_id: 1, name: "Laptop", price: 999.99, stock_quantity: 50, category_id: 1 },
+                { product_id: 2, name: "Smartphone", price: 499.99, stock_quantity: 100, category_id: 1 },
+                { product_id: 3, name: "Headphones", price: 99.99, stock_quantity: 200, category_id: 2 }
+            ],
+            categories: [
+                { category_id: 1, name: "Electronics" },
+                { category_id: 2, name: "Accessories" }
+            ],
+            orders: [
+                { order_id: 1, user_id: 1, total_amount: 999.99, status: "Delivered" },
+                { order_id: 2, user_id: 2, total_amount: 599.98, status: "Processing" }
+            ]
+        };
+
+        // Function to convert natural language to SQL using the Hugging Face Inference API
+        async function convertToSQL(nlQuery) {
+            const sqlEditor = document.getElementById('sql-editor');
+            const errorLog = document.getElementById('error-log');
+            const loading = document.getElementById('loading');
             
-            // Initialize the database with schema
             try {
-                db.run(schema);
-                console.log("Schema initialized");
+                loading.style.display = 'inline-block';
+                errorLog.innerText = '';
                 
-                // Add some sample data
-                db.run(`
-                    INSERT INTO customers VALUES (1, 'John Doe', 'john@example.com', 'New York', 'NY');
-                    INSERT INTO customers VALUES (2, 'Jane Smith', 'jane@example.com', 'Los Angeles', 'CA');
-                    INSERT INTO customers VALUES (3, 'Bob Johnson', 'bob@example.com', 'Chicago', 'IL');
-                    
-                    INSERT INTO products VALUES (1, 'Laptop', 999.99, 'Electronics');
-                    INSERT INTO products VALUES (2, 'Smartphone', 499.99, 'Electronics');
-                    INSERT INTO products VALUES (3, 'Headphones', 99.99, 'Accessories');
-                    
-                    INSERT INTO orders VALUES (1, 1, '2023-01-15', 999.99);
-                    INSERT INTO orders VALUES (2, 2, '2023-01-20', 599.98);
-                    INSERT INTO orders VALUES (3, 1, '2023-02-10', 99.99);
-                    
-                    INSERT INTO order_items VALUES (1, 1, 1, 1, 999.99);
-                    INSERT INTO order_items VALUES (2, 2, 2, 1, 499.99);
-                    INSERT INTO order_items VALUES (3, 2, 3, 1, 99.99);
-                    INSERT INTO order_items VALUES (4, 3, 3, 1, 99.99);
-                `);
-                console.log("Sample data added");
-            } catch (err) {
-                document.getElementById('error-content').innerText = `Error initializing schema: ${err.message}`;
-            }
-        }).catch(err => {
-            document.getElementById('error-content').innerText = `Failed to load SQL.js: ${err.message}`;
-        });
+                // Create prompt for the model
+                const prompt = `### Task
+Generate a SQL query to answer the question based on the table schema below.
 
-        // Function to edit schema
-        function editSchema() {
-            const currentSchema = schema;
-            const newSchema = prompt("Edit database schema:", currentSchema);
-            
-            if (newSchema && newSchema !== currentSchema) {
-                try {
-                    // Reinitialize the database with the new schema
-                    db = new SQL.Database();
-                    db.run(newSchema);
-                    schema = newSchema;
-                    
-                    // Update schema view
-                    updateSchemaView();
-                    
-                    console.log("Schema updated");
-                } catch (err) {
-                    document.getElementById('error-content').innerText = `Error updating schema: ${err.message}`;
-                }
-            }
-        }
+### Database Schema
+${sampleSchema}
 
-        // Function to update schema view
-        function updateSchemaView() {
-            // Simple parser to extract table and column info from schema
-            const tables = [];
-            const tableRegex = /CREATE\s+TABLE\s+(\w+)\s*\(([\s\S]*?)\)/gi;
-            let match;
-            
-            while ((match = tableRegex.exec(schema)) !== null) {
-                const tableName = match[1];
-                const columnsText = match[2];
+### Question
+${nlQuery}
+
+### SQL Query
+`;
                 
-                const columns = columnsText
-                    .split(',')
-                    .map(col => col.trim().split(/\s+/)[0])
-                    .filter(col => col && !col.startsWith('FOREIGN') && !col.startsWith('PRIMARY'));
-                
-                tables.push({
-                    name: tableName,
-                    columns: columns
+                // Call Hugging Face Inference API for defog/sqlcoder-7b-2
+                const response = await fetch("https://api-inference.huggingface.co/models/defog/sqlcoder-7b-2", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        inputs: prompt,
+                        parameters: {
+                            max_new_tokens: 200,
+                            temperature: 0.1,
+                            do_sample: false
+                        }
+                    })
                 });
-            }
-            
-            // Update the view
-            const schemaContent = document.getElementById('schema-content');
-            schemaContent.innerHTML = '';
-            
-            tables.forEach(table => {
-                const p = document.createElement('p');
-                p.innerHTML = `<strong>${table.name}</strong>: ${table.columns.join(', ')}`;
-                schemaContent.appendChild(p);
-            });
-        }
-
-        // Function to execute SQL
-        function executeSQL() {
-            const sqlQuery = document.getElementById('sql-output').innerText;
-            if (!sqlQuery.trim()) {
-                document.getElementById('error-content').innerText = "No SQL query to execute";
-                return;
-            }
-            
-            try {
-                // Clear previous errors
-                document.getElementById('error-content').innerText = "";
                 
-                // Execute the query
-                const result = db.exec(sqlQuery);
-                displayResults(result);
+                const result = await response.json();
+                
+                if (response.status !== 200) {
+                    throw new Error(result.error || "Failed to convert natural language to SQL");
+                }
+                
+                // Extract SQL from the response
+                let sql = result.generated_text || result[0].generated_text;
+                
+                // Extract just the SQL part from the response
+                sql = sql.replace(prompt, "").trim();
+                
+                // Clean up any markdown formatting that might be present
+                if (sql.startsWith("```sql")) {
+                    sql = sql.replace(/```sql|```/g, "").trim();
+                }
+                
+                sqlEditor.value = sql;
             } catch (error) {
-                document.getElementById('error-content').innerText = error.message;
+                errorLog.innerText = `Error: ${error.message}`;
+                console.error("Error converting to SQL:", error);
+            } finally {
+                loading.style.display = 'none';
             }
         }
 
-        // Function to display results
-        function displayResults(results) {
-            const resultContainer = document.getElementById('result-content');
+        // Function to execute SQL query (simulated)
+        function executeSQL(sqlQuery) {
+            const resultArea = document.getElementById('result-area');
+            const errorLog = document.getElementById('error-log');
             
-            if (!results || results.length === 0) {
-                resultContainer.innerHTML = "<em>Query executed successfully, but returned no results.</em>";
-                return;
+            try {
+                errorLog.innerText = '';
+                sqlQuery = sqlQuery.trim().toLowerCase();
+                
+                // Simple SQL parsing for demonstration
+                let result = [];
+                let htmlResult = '';
+                
+                // Check query type
+                if (sqlQuery.startsWith("select")) {
+                    // Extremely simplified parser - just for demo
+                    let tableName = "";
+                    if (sqlQuery.includes("from users")) tableName = "users";
+                    else if (sqlQuery.includes("from products")) tableName = "products";
+                    else if (sqlQuery.includes("from orders")) tableName = "orders";
+                    else if (sqlQuery.includes("from categories")) tableName = "categories";
+                    
+                    if (tableName && sampleData[tableName]) {
+                        result = sampleData[tableName];
+                        
+                        // Create HTML table for the result
+                        if (result.length > 0) {
+                            htmlResult = '<table class="result-table"><thead><tr>';
+                            
+                            // Table headers
+                            Object.keys(result[0]).forEach(key => {
+                                htmlResult += `<th>${key}</th>`;
+                            });
+                            
+                            htmlResult += '</tr></thead><tbody>';
+                            
+                            // Table rows
+                            result.forEach(row => {
+                                htmlResult += '<tr>';
+                                Object.values(row).forEach(value => {
+                                    htmlResult += `<td>${value}</td>`;
+                                });
+                                htmlResult += '</tr>';
+                            });
+                            
+                            htmlResult += '</tbody></table>';
+                        } else {
+                            htmlResult = 'No results found.';
+                        }
+                    } else {
+                        htmlResult = 'Table not found or query too complex for the demo} 
+                            else {
+                        htmlResult = 'Table not found or query too complex for the demo.';
+                    }
+                } else if (sqlQuery.startsWith("insert") || sqlQuery.startsWith("update") || sqlQuery.startsWith("delete")) {
+                    htmlResult = 'Query executed successfully. (Simulated)';
+                } else if (sqlQuery.startsWith("create") || sqlQuery.startsWith("alter") || sqlQuery.startsWith("drop")) {
+                    htmlResult = 'DDL command executed successfully. (Simulated)';
+                } else if (sqlQuery.startsWith("grant") || sqlQuery.startsWith("revoke")) {
+                    htmlResult = 'DCL command executed successfully. (Simulated)';
+                } else {
+                    throw new Error("Unsupported SQL command or invalid syntax");
+                }
+                
+                resultArea.innerHTML = htmlResult;
+            } catch (error) {
+                errorLog.innerText = `Error: ${error.message}`;
+                console.error("Error executing SQL:", error);
             }
+        }
+
+        // Add event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const convertBtn = document.getElementById('convert-btn');
+            const executeBtn = document.getElementById('execute-btn');
+            const nlInput = document.getElementById('nl-input');
+            const sqlEditor = document.getElementById('sql-editor');
+            const projectItems = document.querySelectorAll('.project-item');
             
-            let tableHtml = "";
-            
-            results.forEach(result => {
-                tableHtml += "<table>";
-                
-                // Table headers
-                tableHtml += "<tr>";
-                result.columns.forEach(column => {
-                    tableHtml += `<th>${column}</th>`;
-                });
-                tableHtml += "</tr>";
-                
-                // Table rows
-                result.values.forEach(row => {
-                    tableHtml += "<tr>";
-                    row.forEach(cell => {
-                        tableHtml += `<td>${cell !== null ? cell : "NULL"}</td>`;
-                    });
-                    tableHtml += "</tr>";
-                });
-                
-                tableHtml += "</table><br>";
+            convertBtn.addEventListener('click', function() {
+                const nlQuery = nlInput.value.trim();
+                if (nlQuery) {
+                    convertToSQL(nlQuery);
+                }
             });
             
-            resultContainer.innerHTML = tableHtml;
-        }
-
-        // Function to convert natural language to SQL
-        function convertToSQL() {
-            const nlQuery = document.getElementById('nl-input').value.trim();
-            if (!nlQuery) {
-                document.getElementById('error-content').innerText = "Please enter a natural language query";
-                return;
-            }
-            
-            document.getElementById('error-content').innerText = "";
-// Function to convert natural language to SQL (continued)
-    try {
-        // This is a rule-based NL to SQL converter
-        // It uses pattern matching to generate SQL queries without requiring external APIs
-        
-        // Convert query to lowercase for easier matching
-        const query = nlQuery.toLowerCase();
-        let sqlQuery = "";
-        
-        // Pattern matching for common query types
-        if (query.includes("show") || query.includes("list") || query.includes("get") || 
-            query.includes("display") || query.includes("select") || query.includes("find")) {
-            
-            // Determine which table to query
-            let tableName = "";
-            if (query.includes("customer")) tableName = "customers";
-            else if (query.includes("product")) tableName = "products";
-            else if (query.includes("order")) {
-                if (query.includes("item") || query.includes("line")) 
-                    tableName = "order_items";
-                else 
-                    tableName = "orders";
-            }
-            
-            // If no table is explicitly mentioned but there's a specific attribute
-            if (!tableName) {
-                if (query.includes("name") || query.includes("email") || query.includes("city") || query.includes("state"))
-                    tableName = "customers";
-                else if (query.includes("price") || query.includes("category"))
-                    tableName = "products";
-                else if (query.includes("date") || query.includes("total"))
-                    tableName = "orders";
-                else if (query.includes("quantity"))
-                    tableName = "order_items";
-                else
-                    tableName = "customers"; // Default to customers
-            }
-            
-            // Determine if we need specific columns or all columns
-            let columns = "*";
-            if (query.includes("name")) {
-                if (tableName === "customers") columns = "name";
-                else if (tableName === "products") columns = "name";
-            } else if (query.includes("email")) columns = "email";
-            else if (query.includes("city")) columns = "city";
-            else if (query.includes("state")) columns = "state";
-            else if (query.includes("price")) columns = "price";
-            else if (query.includes("category")) columns = "category";
-            else if (query.includes("date")) columns = "order_date";
-            else if (query.includes("total")) columns = "total";
-            else if (query.includes("quantity")) columns = "quantity";
-            
-            // Build WHERE clause
-            let whereClause = "";
-            
-            // Match city conditions
-            const cityPattern = /(from|in) ([a-z ]+)/i;
-            const cityMatch = query.match(cityPattern);
-            if (cityMatch && tableName === "customers") {
-                const city = cityMatch[2].trim();
-                whereClause = `WHERE city = '${city}'`;
-            }
-            
-            // Match state conditions
-            const statePattern = /(from|in) ([a-z]{2})/i;
-            const stateMatch = query.match(statePattern);
-            if (stateMatch && tableName === "customers") {
-                const state = stateMatch[2].toUpperCase();
-                whereClause = `WHERE state = '${state}'`;
-            }
-            
-            // Match category conditions
-            const categoryPattern = /(in|from) (category|categories) ([a-z ]+)/i;
-            const categoryMatch = query.match(categoryPattern);
-            if (categoryMatch && tableName === "products") {
-                const category = categoryMatch[3].trim();
-                whereClause = `WHERE category = '${category}'`;
-            }
-            
-            // Detect price conditions
-            if (query.includes("less than") || query.includes("cheaper than") || query.includes("under")) {
-                const pricePattern = /(less than|cheaper than|under) (\d+(\.\d+)?)/i;
-                const priceMatch = query.match(pricePattern);
-                if (priceMatch && (tableName === "products" || tableName === "order_items")) {
-                    const price = priceMatch[2];
-                    whereClause = `WHERE price < ${price}`;
+            executeBtn.addEventListener('click', function() {
+                const sqlQuery = sqlEditor.value.trim();
+                if (sqlQuery) {
+                    executeSQL(sqlQuery);
                 }
-            } else if (query.includes("more than") || query.includes("greater than") || query.includes("over")) {
-                const pricePattern = /(more than|greater than|over) (\d+(\.\d+)?)/i;
-                const priceMatch = query.match(pricePattern);
-                if (priceMatch && (tableName === "products" || tableName === "order_items")) {
-                    const price = priceMatch[2];
-                    whereClause = `WHERE price > ${price}`;
+            });
+            
+            // Pressing Enter in NL input can also trigger conversion
+            nlInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    const nlQuery = nlInput.value.trim();
+                    if (nlQuery) {
+                        convertToSQL(nlQuery);
+                    }
                 }
-            }
+            });
             
-            // Detect date conditions
-            if (query.includes("before")) {
-                const datePattern = /before ['"]?(\d{4}-\d{2}-\d{2})['"]?/i;
-                const dateMatch = query.match(datePattern);
-                if (dateMatch && tableName === "orders") {
-                    const date = dateMatch[1];
-                    whereClause = `WHERE order_date < '${date}'`;
-                }
-            } else if (query.includes("after")) {
-                const datePattern = /after ['"]?(\d{4}-\d{2}-\d{2})['"]?/i;
-                const dateMatch = query.match(datePattern);
-                if (dateMatch && tableName === "orders") {
-                    const date = dateMatch[1];
-                    whereClause = `WHERE order_date > '${date}'`;
-                }
-            }
+            // Add click event for project items to show schema info
+            projectItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const tableName = this.textContent;
+                    nlInput.value = `Show me the schema for ${tableName}`;
+                    convertToSQL(`Show me the schema for ${tableName}`);
+                });
+            });
             
-            // Detect sorting
-            let orderBy = "";
-            if (query.includes("sort by") || query.includes("order by")) {
-                let sortField = "";
-                let sortOrder = "ASC";
-                
-                if (query.includes("price")) sortField = "price";
-                else if (query.includes("date")) sortField = "order_date";
-                else if (query.includes("name")) sortField = "name";
-                
-                if (query.includes("descending") || query.includes("high to low") || 
-                    query.includes("newest") || query.includes("latest")) {
-                    sortOrder = "DESC";
-                }
-                
-                if (sortField) {
-                    orderBy = `ORDER BY ${sortField} ${sortOrder}`;
-                }
-            }
-            
-            // Detect limits
-            let limitClause = "";
-            const limitPattern = /(top|first) (\d+)/i;
-            const limitMatch = query.match(limitPattern);
-            if (limitMatch) {
-                const limit = limitMatch[2];
-                limitClause = `LIMIT ${limit}`;
-            }
-            
-            // Build the full query
-            sqlQuery = `SELECT ${columns} FROM ${tableName} ${whereClause} ${orderBy} ${limitClause}`;
-        } 
-        // INSERT queries
-        else if (query.includes("add") || query.includes("insert") || query.includes("create")) {
-            let tableName = "";
-            if (query.includes("customer")) tableName = "customers";
-            else if (query.includes("product")) tableName = "products";
-            else if (query.includes("order")) {
-                if (query.includes("item")) tableName = "order_items";
-                else tableName = "orders";
-            }
-            
-            // This is a simplified version - in a real app, you'd parse out the values
-            if (tableName) {
-                sqlQuery = `INSERT INTO ${tableName} VALUES (/* Values would go here */);
-/* Example:
-INSERT INTO ${tableName} (column1, column2) VALUES (value1, value2); */`;
-            }
-        } 
-        // UPDATE queries
-        else if (query.includes("update") || query.includes("change") || query.includes("modify")) {
-            let tableName = "";
-            if (query.includes("customer")) tableName = "customers";
-            else if (query.includes("product")) tableName = "products";
-            else if (query.includes("order")) {
-                if (query.includes("item")) tableName = "order_items";
-                else tableName = "orders";
-            }
-            
-            if (tableName) {
-                sqlQuery = `UPDATE ${tableName} SET /* column = value */ WHERE /* condition */;
-/* Example:
-UPDATE ${tableName} SET price = 199.99 WHERE product_id = 1; */`;
-            }
-        }
-        // DELETE queries
-        else if (query.includes("delete") || query.includes("remove")) {
-            let tableName = "";
-            if (query.includes("customer")) tableName = "customers";
-            else if (query.includes("product")) tableName = "products";
-            else if (query.includes("order")) {
-                if (query.includes("item")) tableName = "order_items";
-                else tableName = "orders";
-            }
-            
-            if (tableName) {
-                sqlQuery = `DELETE FROM ${tableName} WHERE /* condition */;
-/* Example: 
-DELETE FROM ${tableName} WHERE product_id = 3; */`;
-            }
-        }
-        // CREATE TABLE (DDL)
-        else if (query.includes("create table") || query.includes("new table")) {
-            // Extract table name - simple approach
-            const tableNamePattern = /table (\w+)/i;
-            const tableMatch = query.match(tableNamePattern);
-            let tableName = tableMatch ? tableMatch[1] : "new_table";
-            
-            sqlQuery = `CREATE TABLE ${tableName} (
-    id INT PRIMARY KEY,
-    /* Define other columns here */
-    name VARCHAR(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);`;
-        }
-        // ALTER TABLE (DDL)
-        else if (query.includes("alter table") || query.includes("modify table") || query.includes("change table")) {
-            // Extract table name - simple approach
-            const tableNamePattern = /table (\w+)/i;
-            const tableMatch = query.match(tableNamePattern);
-            let tableName = tableMatch ? tableMatch[1] : "table_name";
-            
-            if (query.includes("add column") || query.includes("new column")) {
-                sqlQuery = `ALTER TABLE ${tableName} ADD COLUMN new_column VARCHAR(100);`;
-            } else if (query.includes("drop column") || query.includes("remove column") || query.includes("delete column")) {
-                sqlQuery = `ALTER TABLE ${tableName} DROP COLUMN column_name;`;
-            } else {
-                sqlQuery = `ALTER TABLE ${tableName} /* Specify alteration */;
-/* Examples:
-ALTER TABLE ${tableName} ADD COLUMN new_column VARCHAR(100);
-ALTER TABLE ${tableName} DROP COLUMN column_name;
-ALTER TABLE ${tableName} MODIFY COLUMN column_name NEW_TYPE; */`;
-            }
-        }
-        // DROP TABLE (DDL)
-        else if (query.includes("drop table") || query.includes("delete table") || query.includes("remove table")) {
-            // Extract table name - simple approach
-            const tableNamePattern = /table (\w+)/i;
-            const tableMatch = query.match(tableNamePattern);
-            let tableName = tableMatch ? tableMatch[1] : "table_name";
-            
-            sqlQuery = `DROP TABLE ${tableName};`;
-        }
-        // JOIN queries
-        else if (query.includes("join") || query.includes("combine") || 
-                (query.includes("order") && query.includes("customer")) ||
-                (query.includes("product") && query.includes("order"))) {
-                
-            if (query.includes("customer") && query.includes("order")) {
-                sqlQuery = `SELECT c.name, o.order_id, o.order_date, o.total
-FROM customers c
-JOIN orders o ON c.customer_id = o.customer_id;`;
-            } else if (query.includes("product") && query.includes("order")) {
-                sqlQuery = `SELECT p.name, oi.quantity, oi.price, o.order_date
-FROM products p
-JOIN order_items oi ON p.product_id = oi.product_id
-JOIN orders o ON oi.order_id = o.order_id;`;
-            }
-        }
-        // DEFAULT query if no pattern matched
-        if (!sqlQuery) {
-            sqlQuery = `SELECT * FROM customers;
--- Your query "${nlQuery}" didn't match our patterns.
--- Try asking for something like:
--- "Show all customers from New York"
--- "List products in Electronics category"
--- "Find orders placed after 2023-01-01"`;
-        }
-        
-        // Clean up the query by removing extra spaces
-        sqlQuery = sqlQuery.replace(/\s+/g, ' ').trim().replace(/ ;/g, ';');
-        
-        // Format multiline queries properly
-        if (sqlQuery.includes(';')) {
-            sqlQuery = sqlQuery.split(';').map(q => q.trim()).filter(q => q).join(';\n\n');
-            if (!sqlQuery.endsWith(';')) sqlQuery += ';';
-        }
-        
-        // Display in editor
-        document.getElementById('sql-output').innerText = sqlQuery;
-    } catch (error) {
-        document.getElementById('error-content').innerText = `Error converting to SQL: ${error.message}`;
-    }
-}
-
-// Function to copy SQL to clipboard
-function copyToClipboard() {
-    const sqlText = document.getElementById('sql-output').innerText;
-    if (!sqlText.trim()) {
-        return;
-    }
-    
-    navigator.clipboard.writeText(sqlText)
-        .then(() => {
-            // Flash success message
-            const originalText = document.getElementById('sql-output').innerText;
-            document.getElementById('sql-output').innerText = "Copied to clipboard!";
-            setTimeout(() => {
-                document.getElementById('sql-output').innerText = originalText;
-            }, 1000);
-        })
-        .catch(err => {
-            document.getElementById('error-content').innerText = `Failed to copy: ${err.message}`;
+            // Initialize with some help text
+            document.getElementById('error-log').innerText = 'Ready to convert natural language to SQL.';
+            nlInput.value = 'Try typing "Show all active users" or "Find products with price less than 500"';
         });
-}
-</script>
+        
+        // Fallback for Hugging Face API - in case the free API is rate-limited
+        function fallbackNLToSQL(nlQuery) {
+            const patterns = [
+                { regex: /show all (.*)/i, sql: "SELECT * FROM $1;" },
+                { regex: /find (.*) with (.*) less than (.*)/i, sql: "SELECT * FROM $1 WHERE $2 < $3;" },
+                { regex: /count (.*) in (.*)/i, sql: "SELECT COUNT(*) FROM $2 WHERE category_id = (SELECT category_id FROM categories WHERE name = '$1');" },
+                { regex: /create table (.*) with columns (.*)/i, sql: "CREATE TABLE $1 ($2);" },
+                { regex: /add column (.*) to (.*)/i, sql: "ALTER TABLE $2 ADD COLUMN $1;" },
+                { regex: /insert (.*) into (.*)/i, sql: "INSERT INTO $2 VALUES ($1);" },
+                { regex: /delete (.*) where (.*)/i, sql: "DELETE FROM $1 WHERE $2;" },
+                { regex: /update (.*) set (.*) where (.*)/i, sql: "UPDATE $1 SET $2 WHERE $3;" },
+                { regex: /grant (.*) on (.*) to (.*)/i, sql: "GRANT $1 ON $2 TO $3;" },
+                { regex: /schema for (.*)/i, sql: "DESCRIBE $1;" }
+            ];
+            
+            // Very basic pattern matching as fallback
+            for (const pattern of patterns) {
+                const match = nlQuery.match(pattern.regex);
+                if (match) {
+                    let sql = pattern.sql;
+                    for (let i = 1; i < match.length; i++) {
+                        sql = sql.replace(`$${i}`, match[i]);
+                    }
+                    return sql;
+                }
+            }
+            
+            // Default fallback
+            return "SELECT * FROM users LIMIT 10; -- Could not generate specific SQL for your query";
+        }
+    </script>
 </body>
 </html>

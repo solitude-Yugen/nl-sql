@@ -220,10 +220,16 @@
         <div class="project-directory">
             <div class="directory-header">PROJECT DIRECTORY</div>
             <div>
-                <ul id="database-list">
-                    <li><a href="#" onclick="selectDatabase('default')">Default Database</a></li>
-                </ul>
-                <button onclick="createNewDatabase()">Add Database</button>
+                <div id="schema-view">
+                    <h3>Database Schema</h3>
+                    <div id="schema-content">
+                        <p><strong>customers</strong>: customer_id, name, email, city, state</p>
+                        <p><strong>products</strong>: product_id, name, price, category</p>
+                        <p><strong>orders</strong>: order_id, customer_id, order_date, total</p>
+                        <p><strong>order_items</strong>: item_id, order_id, product_id, quantity, price</p>
+                    </div>
+                </div>
+                <button onclick="editSchema()">Edit Schema</button>
             </div>
         </div>
         
@@ -266,13 +272,39 @@
         // Global variables
         let db;
         let SQL;
-        let currentDatabase = 'default';
-        let databases = {
-            'default': {
-                name: 'Default Database',
-                tables: {}
-            }
-        };
+        let schema = `
+CREATE TABLE customers (
+    customer_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100),
+    city VARCHAR(50),
+    state VARCHAR(2)
+);
+
+CREATE TABLE products (
+    product_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    price DECIMAL(10, 2),
+    category VARCHAR(50)
+);
+
+CREATE TABLE orders (
+    order_id INT PRIMARY KEY,
+    customer_id INT,
+    order_date DATE,
+    total DECIMAL(10, 2),
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+);
+
+CREATE TABLE order_items (
+    item_id INT PRIMARY KEY,
+    order_id INT,
+    product_id INT,
+    quantity INT,
+    price DECIMAL(10, 2),
+    FOREIGN KEY (order_id) REFERENCES orders(order_id),
+    FOREIGN KEY (product_id) REFERENCES products(product_id)
+);`;
 
         // Initialize SQL.js
         initSqlJs({
@@ -281,37 +313,92 @@
             SQL = sql;
             db = new SQL.Database();
             console.log("SQL.js initialized");
+            
+            // Initialize the database with schema
+            try {
+                db.run(schema);
+                console.log("Schema initialized");
+                
+                // Add some sample data
+                db.run(`
+                    INSERT INTO customers VALUES (1, 'John Doe', 'john@example.com', 'New York', 'NY');
+                    INSERT INTO customers VALUES (2, 'Jane Smith', 'jane@example.com', 'Los Angeles', 'CA');
+                    INSERT INTO customers VALUES (3, 'Bob Johnson', 'bob@example.com', 'Chicago', 'IL');
+                    
+                    INSERT INTO products VALUES (1, 'Laptop', 999.99, 'Electronics');
+                    INSERT INTO products VALUES (2, 'Smartphone', 499.99, 'Electronics');
+                    INSERT INTO products VALUES (3, 'Headphones', 99.99, 'Accessories');
+                    
+                    INSERT INTO orders VALUES (1, 1, '2023-01-15', 999.99);
+                    INSERT INTO orders VALUES (2, 2, '2023-01-20', 599.98);
+                    INSERT INTO orders VALUES (3, 1, '2023-02-10', 99.99);
+                    
+                    INSERT INTO order_items VALUES (1, 1, 1, 1, 999.99);
+                    INSERT INTO order_items VALUES (2, 2, 2, 1, 499.99);
+                    INSERT INTO order_items VALUES (3, 2, 3, 1, 99.99);
+                    INSERT INTO order_items VALUES (4, 3, 3, 1, 99.99);
+                `);
+                console.log("Sample data added");
+            } catch (err) {
+                document.getElementById('error-content').innerText = `Error initializing schema: ${err.message}`;
+            }
         }).catch(err => {
             document.getElementById('error-content').innerText = `Failed to load SQL.js: ${err.message}`;
         });
 
-        // Function to create a new database
-        function createNewDatabase() {
-            const dbName = prompt("Enter database name:");
-            if (dbName && !databases[dbName]) {
-                databases[dbName] = {
-                    name: dbName,
-                    tables: {}
-                };
-                
-                // Add to UI
-                const dbList = document.getElementById('database-list');
-                const li = document.createElement('li');
-                li.innerHTML = `<a href="#" onclick="selectDatabase('${dbName}')">${dbName}</a>`;
-                dbList.appendChild(li);
-                
-                // Select the new database
-                selectDatabase(dbName);
+        // Function to edit schema
+        function editSchema() {
+            const currentSchema = schema;
+            const newSchema = prompt("Edit database schema:", currentSchema);
+            
+            if (newSchema && newSchema !== currentSchema) {
+                try {
+                    // Reinitialize the database with the new schema
+                    db = new SQL.Database();
+                    db.run(newSchema);
+                    schema = newSchema;
+                    
+                    // Update schema view
+                    updateSchemaView();
+                    
+                    console.log("Schema updated");
+                } catch (err) {
+                    document.getElementById('error-content').innerText = `Error updating schema: ${err.message}`;
+                }
             }
         }
 
-        // Function to select a database
-        function selectDatabase(dbName) {
-            if (databases[dbName]) {
-                currentDatabase = dbName;
-                // Here you would typically load the database schema
-                console.log(`Selected database: ${dbName}`);
+        // Function to update schema view
+        function updateSchemaView() {
+            // Simple parser to extract table and column info from schema
+            const tables = [];
+            const tableRegex = /CREATE\s+TABLE\s+(\w+)\s*\(([\s\S]*?)\)/gi;
+            let match;
+            
+            while ((match = tableRegex.exec(schema)) !== null) {
+                const tableName = match[1];
+                const columnsText = match[2];
+                
+                const columns = columnsText
+                    .split(',')
+                    .map(col => col.trim().split(/\s+/)[0])
+                    .filter(col => col && !col.startsWith('FOREIGN') && !col.startsWith('PRIMARY'));
+                
+                tables.push({
+                    name: tableName,
+                    columns: columns
+                });
             }
+            
+            // Update the view
+            const schemaContent = document.getElementById('schema-content');
+            schemaContent.innerHTML = '';
+            
+            tables.forEach(table => {
+                const p = document.createElement('p');
+                p.innerHTML = `<strong>${table.name}</strong>: ${table.columns.join(', ')}`;
+                schemaContent.appendChild(p);
+            });
         }
 
         // Function to execute SQL
@@ -371,7 +458,7 @@
         }
 
         // Function to convert natural language to SQL
-        async function convertToSQL() {
+        function convertToSQL() {
             const nlQuery = document.getElementById('nl-input').value.trim();
             if (!nlQuery) {
                 document.getElementById('error-content').innerText = "Please enter a natural language query";
@@ -379,124 +466,304 @@
             }
             
             document.getElementById('error-content').innerText = "";
+// Function to convert natural language to SQL (continued)
+    try {
+        // This is a rule-based NL to SQL converter
+        // It uses pattern matching to generate SQL queries without requiring external APIs
+        
+        // Convert query to lowercase for easier matching
+        const query = nlQuery.toLowerCase();
+        let sqlQuery = "";
+        
+        // Pattern matching for common query types
+        if (query.includes("show") || query.includes("list") || query.includes("get") || 
+            query.includes("display") || query.includes("select") || query.includes("find")) {
             
-            try {
-                // Using SQLCoder API via HuggingFace
-                const response = await fetch("https://api-inference.huggingface.co/models/defog/sqlcoder-7b-2", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        inputs: getSQLCoderPrompt(nlQuery),
-                        parameters: {
-                            max_new_tokens: 512,
-                            temperature: 0.1
-                        }
-                    })
-                });
+            // Determine which table to query
+            let tableName = "";
+            if (query.includes("customer")) tableName = "customers";
+            else if (query.includes("product")) tableName = "products";
+            else if (query.includes("order")) {
+                if (query.includes("item") || query.includes("line")) 
+                    tableName = "order_items";
+                else 
+                    tableName = "orders";
+            }
+            
+            // If no table is explicitly mentioned but there's a specific attribute
+            if (!tableName) {
+                if (query.includes("name") || query.includes("email") || query.includes("city") || query.includes("state"))
+                    tableName = "customers";
+                else if (query.includes("price") || query.includes("category"))
+                    tableName = "products";
+                else if (query.includes("date") || query.includes("total"))
+                    tableName = "orders";
+                else if (query.includes("quantity"))
+                    tableName = "order_items";
+                else
+                    tableName = "customers"; // Default to customers
+            }
+            
+            // Determine if we need specific columns or all columns
+            let columns = "*";
+            if (query.includes("name")) {
+                if (tableName === "customers") columns = "name";
+                else if (tableName === "products") columns = "name";
+            } else if (query.includes("email")) columns = "email";
+            else if (query.includes("city")) columns = "city";
+            else if (query.includes("state")) columns = "state";
+            else if (query.includes("price")) columns = "price";
+            else if (query.includes("category")) columns = "category";
+            else if (query.includes("date")) columns = "order_date";
+            else if (query.includes("total")) columns = "total";
+            else if (query.includes("quantity")) columns = "quantity";
+            
+            // Build WHERE clause
+            let whereClause = "";
+            
+            // Match city conditions
+            const cityPattern = /(from|in) ([a-z ]+)/i;
+            const cityMatch = query.match(cityPattern);
+            if (cityMatch && tableName === "customers") {
+                const city = cityMatch[2].trim();
+                whereClause = `WHERE city = '${city}'`;
+            }
+            
+            // Match state conditions
+            const statePattern = /(from|in) ([a-z]{2})/i;
+            const stateMatch = query.match(statePattern);
+            if (stateMatch && tableName === "customers") {
+                const state = stateMatch[2].toUpperCase();
+                whereClause = `WHERE state = '${state}'`;
+            }
+            
+            // Match category conditions
+            const categoryPattern = /(in|from) (category|categories) ([a-z ]+)/i;
+            const categoryMatch = query.match(categoryPattern);
+            if (categoryMatch && tableName === "products") {
+                const category = categoryMatch[3].trim();
+                whereClause = `WHERE category = '${category}'`;
+            }
+            
+            // Detect price conditions
+            if (query.includes("less than") || query.includes("cheaper than") || query.includes("under")) {
+                const pricePattern = /(less than|cheaper than|under) (\d+(\.\d+)?)/i;
+                const priceMatch = query.match(pricePattern);
+                if (priceMatch && (tableName === "products" || tableName === "order_items")) {
+                    const price = priceMatch[2];
+                    whereClause = `WHERE price < ${price}`;
+                }
+            } else if (query.includes("more than") || query.includes("greater than") || query.includes("over")) {
+                const pricePattern = /(more than|greater than|over) (\d+(\.\d+)?)/i;
+                const priceMatch = query.match(pricePattern);
+                if (priceMatch && (tableName === "products" || tableName === "order_items")) {
+                    const price = priceMatch[2];
+                    whereClause = `WHERE price > ${price}`;
+                }
+            }
+            
+            // Detect date conditions
+            if (query.includes("before")) {
+                const datePattern = /before ['"]?(\d{4}-\d{2}-\d{2})['"]?/i;
+                const dateMatch = query.match(datePattern);
+                if (dateMatch && tableName === "orders") {
+                    const date = dateMatch[1];
+                    whereClause = `WHERE order_date < '${date}'`;
+                }
+            } else if (query.includes("after")) {
+                const datePattern = /after ['"]?(\d{4}-\d{2}-\d{2})['"]?/i;
+                const dateMatch = query.match(datePattern);
+                if (dateMatch && tableName === "orders") {
+                    const date = dateMatch[1];
+                    whereClause = `WHERE order_date > '${date}'`;
+                }
+            }
+            
+            // Detect sorting
+            let orderBy = "";
+            if (query.includes("sort by") || query.includes("order by")) {
+                let sortField = "";
+                let sortOrder = "ASC";
                 
-                if (!response.ok) {
-                    throw new Error(`API error: ${response.status}`);
+                if (query.includes("price")) sortField = "price";
+                else if (query.includes("date")) sortField = "order_date";
+                else if (query.includes("name")) sortField = "name";
+                
+                if (query.includes("descending") || query.includes("high to low") || 
+                    query.includes("newest") || query.includes("latest")) {
+                    sortOrder = "DESC";
                 }
                 
-                const result = await response.json();
-                
-                // Extract SQL from the response
-                let sqlQuery = result[0].generated_text;
-                
-                // Clean up the SQL (remove any markdown formatting if present)
-                sqlQuery = cleanupSQL(sqlQuery);
-                
-                // Display in editor
-                document.getElementById('sql-output').innerText = sqlQuery;
-            } catch (error) {
-                document.getElementById('error-content').innerText = `Error converting to SQL: ${error.message}`;
+                if (sortField) {
+                    orderBy = `ORDER BY ${sortField} ${sortOrder}`;
+                }
+            }
+            
+            // Detect limits
+            let limitClause = "";
+            const limitPattern = /(top|first) (\d+)/i;
+            const limitMatch = query.match(limitPattern);
+            if (limitMatch) {
+                const limit = limitMatch[2];
+                limitClause = `LIMIT ${limit}`;
+            }
+            
+            // Build the full query
+            sqlQuery = `SELECT ${columns} FROM ${tableName} ${whereClause} ${orderBy} ${limitClause}`;
+        } 
+        // INSERT queries
+        else if (query.includes("add") || query.includes("insert") || query.includes("create")) {
+            let tableName = "";
+            if (query.includes("customer")) tableName = "customers";
+            else if (query.includes("product")) tableName = "products";
+            else if (query.includes("order")) {
+                if (query.includes("item")) tableName = "order_items";
+                else tableName = "orders";
+            }
+            
+            // This is a simplified version - in a real app, you'd parse out the values
+            if (tableName) {
+                sqlQuery = `INSERT INTO ${tableName} VALUES (/* Values would go here */);
+/* Example:
+INSERT INTO ${tableName} (column1, column2) VALUES (value1, value2); */`;
+            }
+        } 
+        // UPDATE queries
+        else if (query.includes("update") || query.includes("change") || query.includes("modify")) {
+            let tableName = "";
+            if (query.includes("customer")) tableName = "customers";
+            else if (query.includes("product")) tableName = "products";
+            else if (query.includes("order")) {
+                if (query.includes("item")) tableName = "order_items";
+                else tableName = "orders";
+            }
+            
+            if (tableName) {
+                sqlQuery = `UPDATE ${tableName} SET /* column = value */ WHERE /* condition */;
+/* Example:
+UPDATE ${tableName} SET price = 199.99 WHERE product_id = 1; */`;
             }
         }
-
-        // Function to prepare prompt for SQLCoder
-        function getSQLCoderPrompt(nlQuery) {
-            // Get schema information from our databases object
-            let schema = "";
+        // DELETE queries
+        else if (query.includes("delete") || query.includes("remove")) {
+            let tableName = "";
+            if (query.includes("customer")) tableName = "customers";
+            else if (query.includes("product")) tableName = "products";
+            else if (query.includes("order")) {
+                if (query.includes("item")) tableName = "order_items";
+                else tableName = "orders";
+            }
             
-            // In a real application, we would extract schema from the database
-            // Here we're using a simplified example
-            schema = `
-CREATE TABLE customers (
-    customer_id INT PRIMARY KEY,
+            if (tableName) {
+                sqlQuery = `DELETE FROM ${tableName} WHERE /* condition */;
+/* Example: 
+DELETE FROM ${tableName} WHERE product_id = 3; */`;
+            }
+        }
+        // CREATE TABLE (DDL)
+        else if (query.includes("create table") || query.includes("new table")) {
+            // Extract table name - simple approach
+            const tableNamePattern = /table (\w+)/i;
+            const tableMatch = query.match(tableNamePattern);
+            let tableName = tableMatch ? tableMatch[1] : "new_table";
+            
+            sqlQuery = `CREATE TABLE ${tableName} (
+    id INT PRIMARY KEY,
+    /* Define other columns here */
     name VARCHAR(100),
-    email VARCHAR(100),
-    city VARCHAR(50),
-    state VARCHAR(2)
-);
-
-CREATE TABLE products (
-    product_id INT PRIMARY KEY,
-    name VARCHAR(100),
-    price DECIMAL(10, 2),
-    category VARCHAR(50)
-);
-
-CREATE TABLE orders (
-    order_id INT PRIMARY KEY,
-    customer_id INT,
-    order_date DATE,
-    total DECIMAL(10, 2),
-    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
-);
-
-CREATE TABLE order_items (
-    item_id INT PRIMARY KEY,
-    order_id INT,
-    product_id INT,
-    quantity INT,
-    price DECIMAL(10, 2),
-    FOREIGN KEY (order_id) REFERENCES orders(order_id),
-    FOREIGN KEY (product_id) REFERENCES products(product_id)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`;
-
-            // Format the prompt for SQLCoder
-            return `### Task
-Generate a SQL query to answer the following question: ${nlQuery}
-
-### Database Schema
-${schema}
-
-### Response
-The SQL query to answer the question is:
-`;
         }
-
-        // Function to clean up SQL from potential markdown formatting
-        function cleanupSQL(sqlText) {
-            // Remove markdown code blocks if present
-            sqlText = sqlText.replace(/```sql/g, '').replace(/```/g, '');
+        // ALTER TABLE (DDL)
+        else if (query.includes("alter table") || query.includes("modify table") || query.includes("change table")) {
+            // Extract table name - simple approach
+            const tableNamePattern = /table (\w+)/i;
+            const tableMatch = query.match(tableNamePattern);
+            let tableName = tableMatch ? tableMatch[1] : "table_name";
             
-            // Trim extra whitespace
-            return sqlText.trim();
-        }
-
-        // Function to copy SQL to clipboard
-        function copyToClipboard() {
-            const sqlText = document.getElementById('sql-output').innerText;
-            if (!sqlText.trim()) {
-                return;
+            if (query.includes("add column") || query.includes("new column")) {
+                sqlQuery = `ALTER TABLE ${tableName} ADD COLUMN new_column VARCHAR(100);`;
+            } else if (query.includes("drop column") || query.includes("remove column") || query.includes("delete column")) {
+                sqlQuery = `ALTER TABLE ${tableName} DROP COLUMN column_name;`;
+            } else {
+                sqlQuery = `ALTER TABLE ${tableName} /* Specify alteration */;
+/* Examples:
+ALTER TABLE ${tableName} ADD COLUMN new_column VARCHAR(100);
+ALTER TABLE ${tableName} DROP COLUMN column_name;
+ALTER TABLE ${tableName} MODIFY COLUMN column_name NEW_TYPE; */`;
             }
-            
-            navigator.clipboard.writeText(sqlText)
-                .then(() => {
-                    // Flash success message
-                    const originalText = document.getElementById('sql-output').innerText;
-                    document.getElementById('sql-output').innerText = "Copied to clipboard!";
-                    setTimeout(() => {
-                        document.getElementById('sql-output').innerText = originalText;
-                    }, 1000);
-                })
-                .catch(err => {
-                    document.getElementById('error-content').innerText = `Failed to copy: ${err.message}`;
-                });
         }
-    </script>
+        // DROP TABLE (DDL)
+        else if (query.includes("drop table") || query.includes("delete table") || query.includes("remove table")) {
+            // Extract table name - simple approach
+            const tableNamePattern = /table (\w+)/i;
+            const tableMatch = query.match(tableNamePattern);
+            let tableName = tableMatch ? tableMatch[1] : "table_name";
+            
+            sqlQuery = `DROP TABLE ${tableName};`;
+        }
+        // JOIN queries
+        else if (query.includes("join") || query.includes("combine") || 
+                (query.includes("order") && query.includes("customer")) ||
+                (query.includes("product") && query.includes("order"))) {
+                
+            if (query.includes("customer") && query.includes("order")) {
+                sqlQuery = `SELECT c.name, o.order_id, o.order_date, o.total
+FROM customers c
+JOIN orders o ON c.customer_id = o.customer_id;`;
+            } else if (query.includes("product") && query.includes("order")) {
+                sqlQuery = `SELECT p.name, oi.quantity, oi.price, o.order_date
+FROM products p
+JOIN order_items oi ON p.product_id = oi.product_id
+JOIN orders o ON oi.order_id = o.order_id;`;
+            }
+        }
+        // DEFAULT query if no pattern matched
+        if (!sqlQuery) {
+            sqlQuery = `SELECT * FROM customers;
+-- Your query "${nlQuery}" didn't match our patterns.
+-- Try asking for something like:
+-- "Show all customers from New York"
+-- "List products in Electronics category"
+-- "Find orders placed after 2023-01-01"`;
+        }
+        
+        // Clean up the query by removing extra spaces
+        sqlQuery = sqlQuery.replace(/\s+/g, ' ').trim().replace(/ ;/g, ';');
+        
+        // Format multiline queries properly
+        if (sqlQuery.includes(';')) {
+            sqlQuery = sqlQuery.split(';').map(q => q.trim()).filter(q => q).join(';\n\n');
+            if (!sqlQuery.endsWith(';')) sqlQuery += ';';
+        }
+        
+        // Display in editor
+        document.getElementById('sql-output').innerText = sqlQuery;
+    } catch (error) {
+        document.getElementById('error-content').innerText = `Error converting to SQL: ${error.message}`;
+    }
+}
+
+// Function to copy SQL to clipboard
+function copyToClipboard() {
+    const sqlText = document.getElementById('sql-output').innerText;
+    if (!sqlText.trim()) {
+        return;
+    }
+    
+    navigator.clipboard.writeText(sqlText)
+        .then(() => {
+            // Flash success message
+            const originalText = document.getElementById('sql-output').innerText;
+            document.getElementById('sql-output').innerText = "Copied to clipboard!";
+            setTimeout(() => {
+                document.getElementById('sql-output').innerText = originalText;
+            }, 1000);
+        })
+        .catch(err => {
+            document.getElementById('error-content').innerText = `Failed to copy: ${err.message}`;
+        });
+}
+</script>
 </body>
 </html>
